@@ -5,80 +5,68 @@ import streamlit as st
 
 @st.cache
 def load_data():
-    columns = {
-        'ocorrencia_latitude':'latitude',
-        'ocorrencia_longitude':'longitude',
-        'ocorrencia_dia' : 'data',
-        'ocorrencia_classificacao':'classificacao',
-        'ocorrencia_tipo':'tipo',
-        'ocorrencia_tipo_categoria':'tipo_categoria',
-        'ocorrencia_tipo_icao':'tipo_icao',
-        'ocorrencia_aerodromo':'aerodromo',
-        'ocorrencia_cidade':'cidade',
-        'investigacao_status':'status',
-        'divulgacao_relatorio_numero':'relatorio_numero',
-        'total_aeronaves_envolvidas':'aeronaves_envolvidas'
-    }
 
-    df = pd.read_csv('ocorrencias_aeronauticas.csv', index_col='codigo_ocorrencia')
-
-    df = df.rename(columns=columns)
-    df['data'] = pd.to_datetime(df['data'],format='%Y-%m-%d')
-    df = df[list(columns.values())]
+    df = pd.read_csv('aeronautical_incidents.csv')
+    df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d')
+    #df = df.values()
 
     return df
 
 # Loading data
 df = load_data()
-labels = df['classificacao'].unique().tolist()
 
+labels = df['type'].unique().tolist()
+
+print(df.dtypes)
 ## SIDEBAR ##
 
 # Number of found data given a set of filters
-st.sidebar.header('Parâmetros')
+st.sidebar.header('Parameters')
 info_sidebar = st.sidebar.empty()
 
 # Year selector slidebar
-st.sidebar.subheader('Ano')
-year_to_filter = st.sidebar.slider('Escolha o ano desejado',2008,2018,2017)
+st.sidebar.subheader('Year')
+year_to_filter = st.sidebar.slider('Choose the year',2008,2018,2017)
 
 # Checkbox for raw data
-st.sidebar.subheader('Tabela')
+st.sidebar.subheader('Spreadsheet')
 tabela = st.sidebar.empty()
 
-# SelectBox for filtering
+# SelectBox for filtering classification
 label_to_filter = st.sidebar.multiselect(
-    label = "Escolha a classificação da ocorrência",
+    label = "Choose the incident type",
     options=labels,
-    default=['INCIDENTE','ACIDENTE']
+    default=['OUTROS'])
 
-)
+# Checkbox for incident type
+st.sidebar.subheader('Filter by incident type')
+type_filter = st.sidebar.empty()
 
 # Sidebar Markdown
-st.sidebar.markdown(""" A base de dados de ocorrencias aeronáuticas é gerenciada pelo ***Centro de Investigação de Incidentes Aeronáuticos (CENIPA)***.""")
+st.sidebar.markdown(""" The database of aeronautical incidents is managed and provided by the ***Aeronautical Incident Investigation Center (CENIPA)***.""")
 
 # FILTER BEING APPLIED
-filtered_df = df.loc[(df['data'].dt.year == year_to_filter) & (df['classificacao'].isin(label_to_filter))]
+filtered_df = df.loc[(df['date'].dt.year == year_to_filter) & (df['type'].isin(label_to_filter))]
 
 # Info sidebar filled with data
-info_sidebar.info(f'{filtered_df.shape[0]} ocorrências selecionadas')
+info_sidebar.info(f'{filtered_df.shape[0]} incident matches')
 
 
 
 ## MAIN ##
 
 # Main Title
-st.title('CENIPA - Ocorrências aeronáuticas')
+st.title('CENIPA - Aeronautical Incidents')
 
 # Subtitle
 st.markdown(f"""
-            Estão sendo exibidas as ocorrências classificadas como **{','.join(label_to_filter)}** no ano de: **{year_to_filter}**
+            The displayed incidents are all classified as **{','.join(label_to_filter)}** in: **{year_to_filter}**
             """)
 
 # Dataframe
-if tabela.checkbox('Mostrar tabela de dados'):
+if tabela.checkbox('Show spreadsheet data'):
     st.write(filtered_df)
 
 # Map
-st.subheader('Mapa de ocorrências')
+st.subheader('Map of incidents')
 st.map(filtered_df,)
